@@ -3,6 +3,10 @@
 
 A Model Context Protocol (MCP) server for running AWS Athena queries. This server enables AI assistants to execute SQL queries against your AWS Athena databases and retrieve results.
 
+<a href="https://glama.ai/mcp/servers/0i7dhkex6t">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/0i7dhkex6t/badge" alt="aws-athena-mcp MCP server" />
+</a>
+
 ## Usage
 
 1. Configure AWS credentials using one of the following methods:
