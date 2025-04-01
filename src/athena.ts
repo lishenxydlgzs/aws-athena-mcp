@@ -6,6 +6,9 @@ import {
   QueryExecutionState,
   GetQueryExecutionCommandOutput,
   InvalidRequestException,
+  ListNamedQueriesCommand,
+  BatchGetNamedQueryCommand,
+  GetNamedQueryCommand
 } from "@aws-sdk/client-athena";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 import { QueryInput, QueryResult, QueryStatus, AthenaError } from "./types.js";
@@ -13,6 +16,7 @@ import { QueryInput, QueryResult, QueryStatus, AthenaError } from "./types.js";
 export class AthenaService {
   private client: AthenaClient;
   private outputLocation: string;
+  private workGroup?: string;
 
   constructor() {
     if (!process.env.OUTPUT_S3_PATH) {
@@ -20,6 +24,8 @@ export class AthenaService {
     }
 
     this.outputLocation = process.env.OUTPUT_S3_PATH;
+    this.workGroup = process.env.ATHENA_WORKGROUP;
+
     const profile = process.env.AWS_PROFILE;
     this.client = new AthenaClient({
       credentials: defaultProvider({
@@ -41,6 +47,7 @@ export class AthenaService {
           ResultConfiguration: {
             OutputLocation: this.outputLocation,
           },
+          ...(this.workGroup && { WorkGroup: this.workGroup })
         })
       );
 
@@ -120,7 +127,7 @@ export class AthenaService {
     try {
       // Check query state first
       const status = await this.getQueryStatus(queryExecutionId);
-      
+
       if (status.state === QueryExecutionState.RUNNING || status.state === QueryExecutionState.QUEUED) {
         throw {
           message: "Query is still running",
@@ -188,6 +195,57 @@ export class AthenaService {
       }
       throw error;
     }
+  }
+
+  async listNamedQueries(): Promise<{ namedQueries: { id: string; name: string; description?: string }[] }> {
+    const listResponse = await this.client.send(
+      new ListNamedQueriesCommand({
+        ...(this.workGroup && { WorkGroup: this.workGroup })
+      })
+    );
+
+    if (!listResponse.NamedQueryIds || listResponse.NamedQueryIds.length === 0) {
+      return { namedQueries: [] };
+    }
+
+    const batchResponse = await this.client.send(
+      new BatchGetNamedQueryCommand({ NamedQueryIds: listResponse.NamedQueryIds })
+    );
+
+    const namedQueries = (batchResponse.NamedQueries || []).map((query) => ({
+      id: query.NamedQueryId || "",
+      name: query.Name || "",
+      description: query.Description,
+    }));
+
+    return { namedQueries };
+  }
+
+  async executeNamedQuery(
+    namedQueryId: string,
+    databaseOverride?: string,
+    maxRows?: number,
+    timeoutMs?: number
+  ): Promise<QueryResult | { queryExecutionId: string }> {
+    const namedQueryResp = await this.client.send(
+      new GetNamedQueryCommand({ NamedQueryId: namedQueryId })
+    );
+
+    if (!namedQueryResp.NamedQuery || !namedQueryResp.NamedQuery.QueryString) {
+      throw {
+        message: "Named query not found or empty",
+        code: "NAMED_QUERY_NOT_FOUND",
+      };
+    }
+
+    const queryInput: QueryInput = {
+      query: namedQueryResp.NamedQuery.QueryString,
+      database: databaseOverride || namedQueryResp.NamedQuery.Database || "",
+      maxRows,
+      timeoutMs,
+    };
+
+    return this.executeQuery(queryInput);
   }
 
   private async waitForQueryCompletion(
