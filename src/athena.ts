@@ -13,6 +13,7 @@ import { QueryInput, QueryResult, QueryStatus, AthenaError } from "./types.js";
 export class AthenaService {
   private client: AthenaClient;
   private outputLocation: string;
+  private workGroup?: string;
 
   constructor() {
     if (!process.env.OUTPUT_S3_PATH) {
@@ -20,6 +21,8 @@ export class AthenaService {
     }
 
     this.outputLocation = process.env.OUTPUT_S3_PATH;
+    this.workGroup = process.env.ATHENA_WORKGROUP;
+
     const profile = process.env.AWS_PROFILE;
     this.client = new AthenaClient({
       credentials: defaultProvider({
@@ -41,6 +44,7 @@ export class AthenaService {
           ResultConfiguration: {
             OutputLocation: this.outputLocation,
           },
+          ...(this.workGroup && { WorkGroup: this.workGroup })
         })
       );
 
