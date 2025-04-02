@@ -11,7 +11,7 @@ A Model Context Protocol (MCP) server for running AWS Athena queries. This serve
 
 1. Configure AWS credentials using one of the following methods:
    - AWS CLI configuration
-   - Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+   - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
    - IAM role (if running on AWS)
 
 2. Add the server to your MCP configuration:
@@ -34,9 +34,10 @@ A Model Context Protocol (MCP) server for running AWS Athena queries. This serve
         "AWS_SESSION_TOKEN": "",                      // Optional: AWS session token
         
         // Optional server configuration
-        "QUERY_TIMEOUT_MS": "300000",                // Default: 5 minutes (300000ms)
-        "MAX_RETRIES": "100",                        // Default: 100 attempts
-        "RETRY_DELAY_MS": "500"                      // Default: 500ms between retries
+        "ATHENA_WORKGROUP": "default_workgroup",      // Optional: specify the Athena WorkGroup
+        "QUERY_TIMEOUT_MS": "300000",                 // Default: 5 minutes (300000ms)
+        "MAX_RETRIES": "100",                         // Default: 100 attempts
+        "RETRY_DELAY_MS": "500"                       // Default: 500ms between retries
       }
     }
   }
@@ -71,6 +72,23 @@ A Model Context Protocol (MCP) server for running AWS Athena queries. This serve
   - Returns:
     - Full query results if the query has completed successfully
     - Error if query failed or is still running
+
+- `list_saved_queries`: List all saved (named) queries in Athena.
+
+- Returns:
+  - An array of saved queries with `id`, `name`, and optional `description`
+  - Queries are returned from the configured `ATHENA_WORKGROUP` and `AWS_REGION`
+
+- run_saved_query: Run a previously saved query by its ID.
+- Parameters:
+  - `namedQueryId`: ID of the saved query
+  - `databaseOverride`: Optional override of the saved query's default database
+  - `maxRows`: Maximum number of rows to return (default: 1000)
+  - `timeoutMs`: Timeout in milliseconds (default: 60000)
+- Returns:
+  - Same behavior as `run_query`: full results or execution ID
+
+---
 
 ## Usage Examples
 
@@ -150,11 +168,36 @@ MCP parameter:
   "maxRows": 10
 }
 ```
+
+### Listing Saved Queries
+```json
+{
+  "name": "list_saved_queries",
+  "arguments": {}
+}
+```
+
+### Running a Saved Query
+```json
+{
+  "name": "run_saved_query",
+  "arguments": {
+    "namedQueryId": "abcd-1234-efgh-5678",
+    "maxRows": 100
+  }
+}
+```
+
+---
+
 ## Requirements
 
 - Node.js >= 16
-- AWS credentials with appropriate Athena permissions
+- AWS credentials with appropriate Athena and S3 permissions
 - S3 bucket for query results
+- Named queries (optional) must exist in the specified `ATHENA_WORKGROUP` and `AWS_REGION`
+
+---
 
 ## License
 

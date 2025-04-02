@@ -104,6 +104,43 @@ class AthenaServer {
             required: ["queryExecutionId"],
           },
         },
+        {
+          name: "run_saved_query",
+          description: "Execute a saved (named) Athena query by its query ID.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              namedQueryId: {
+                type: "string",
+                description: "Athena NamedQueryId",
+              },
+              databaseOverride: {
+                type: "string",
+                description: "Optional database override",
+              },
+              maxRows: {
+                type: "number",
+                description: "Maximum number of rows to return (default: 1000)",
+                minimum: 1,
+                maximum: 10000,
+              },
+              timeoutMs: {
+                type: "number",
+                description: "Timeout in milliseconds (default: 60000)",
+                minimum: 1000,
+              },
+            },
+            required: ["namedQueryId"],
+          },
+        },
+        {
+          name: "list_saved_queries",
+          description: "List all saved (named) Athena queries available in your AWS account.",
+          inputSchema: {
+            type: "object",
+            properties: {},
+          },
+        },
       ],
     }));
 
@@ -111,7 +148,7 @@ class AthenaServer {
       try {
         switch (request.params.name) {
           case "run_query": {
-            if (!request.params.arguments || 
+            if (!request.params.arguments ||
                 typeof request.params.arguments.database !== 'string' ||
                 typeof request.params.arguments.query !== 'string') {
               throw new McpError(
@@ -123,7 +160,7 @@ class AthenaServer {
             const queryInput: QueryInput = {
               database: request.params.arguments.database,
               query: request.params.arguments.query,
-              maxRows: typeof request.params.arguments.maxRows === 'number' ? 
+              maxRows: typeof request.params.arguments.maxRows === 'number' ?
                 request.params.arguments.maxRows : undefined,
               timeoutMs: typeof request.params.arguments.timeoutMs === 'number' ?
                 request.params.arguments.timeoutMs : undefined,
@@ -140,7 +177,7 @@ class AthenaServer {
           }
 
           case "get_result": {
-            if (!request.params.arguments?.queryExecutionId || 
+            if (!request.params.arguments?.queryExecutionId ||
                 typeof request.params.arguments.queryExecutionId !== 'string') {
               throw new McpError(
                 ErrorCode.InvalidParams,
@@ -148,7 +185,7 @@ class AthenaServer {
               );
             }
 
-            const maxRows = typeof request.params.arguments.maxRows === 'number' ? 
+            const maxRows = typeof request.params.arguments.maxRows === 'number' ?
               request.params.arguments.maxRows : undefined;
             const result = await this.athenaService.getQueryResults(
               request.params.arguments.queryExecutionId,
@@ -165,7 +202,7 @@ class AthenaServer {
           }
 
           case "get_status": {
-            if (!request.params.arguments?.queryExecutionId || 
+            if (!request.params.arguments?.queryExecutionId ||
                 typeof request.params.arguments.queryExecutionId !== 'string') {
               throw new McpError(
                 ErrorCode.InvalidParams,
@@ -181,6 +218,45 @@ class AthenaServer {
                 {
                   type: "text",
                   text: JSON.stringify(status, null, 2),
+                },
+              ],
+            };
+          }
+
+          case "run_saved_query": {
+            const args = request.params.arguments;
+            if (!args || typeof args.namedQueryId !== 'string') {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                "Missing required parameter: namedQueryId (string)"
+              );
+            }
+
+            const result = await this.athenaService.executeNamedQuery(
+              args.namedQueryId,
+              typeof args.databaseOverride === 'string' ? args.databaseOverride : undefined,
+              typeof args.maxRows === 'number' ? args.maxRows : undefined,
+              typeof args.timeoutMs === 'number' ? args.timeoutMs : undefined,
+            );
+
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(result, null, 2),
+                },
+              ],
+            };
+          }
+
+          case "list_saved_queries": {
+            const result = await this.athenaService.listNamedQueries();
+
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(result, null, 2),
                 },
               ],
             };
