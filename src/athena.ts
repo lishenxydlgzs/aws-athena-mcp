@@ -111,6 +111,7 @@ export class AthenaService {
           dataScannedInBytes: response.QueryExecution.Statistics?.DataScannedInBytes || 0,
           engineExecutionTimeInMillis: response.QueryExecution.Statistics?.EngineExecutionTimeInMillis || 0,
         },
+        substatementType: response.QueryExecution.SubstatementType,
       };
     } catch (error) {
       if (error instanceof InvalidRequestException) {
@@ -168,7 +169,7 @@ export class AthenaService {
       ) || [];
 
       const rows = (results.ResultSet.Rows || [])
-        .slice(1) // Skip header row
+        .slice(status.substatementType === 'SELECT' ? 1 : 0) // Skip header row if query is SELECT
         .map((row) => {
           const obj: Record<string, unknown> = {};
           row.Data?.forEach((data, index) => {
