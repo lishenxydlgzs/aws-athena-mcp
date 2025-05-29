@@ -20,7 +20,7 @@ export interface QueryStatus {
     dataScannedInBytes: number;
     engineExecutionTimeInMillis: number;
   };
-  substatementType: string;
+  substatementType?: string;
 }
 
 export interface AthenaError {
