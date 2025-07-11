@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/lishenxydlgzs-aws-athena-mcp-badge.png)](https://mseep.ai/app/lishenxydlgzs-aws-athena-mcp)
+
 # @lishenxydlgzs/aws-athena-mcp
 [![smithery badge](https://smithery.ai/badge/@lishenxydlgzs/aws-athena-mcp)](https://smithery.ai/server/@lishenxydlgzs/aws-athena-mcp)
 
