@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/lishenxydlgzs-aws-athena-mcp-badge.png)](https://mseep.ai/app/lishenxydlgzs-aws-athena-mcp)
+
 # @lishenxydlgzs/aws-athena-mcp
 [![LightNow](https://lightnow.ai/badge/io.github.lishenxydlgzs/aws-athena-mcp)](https://lightnow.ai/servers/io.github.lishenxydlgzs/aws-athena-mcp)
 
